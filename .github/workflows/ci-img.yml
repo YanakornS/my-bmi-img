@@ -1,0 +1,31 @@
+name: "build and deploy docker image"
+
+on:
+  push:
+    tags:
+      - "*" # Trigger เมื่อ push tag ใด ๆ
+
+jobs:
+  release-docker-image-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Extract tag name
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Verify extracted tag
+        run: echo "Using TAG_NAME=${{ env.TAG_NAME }}"
+
+      - name: Build and push Docker image
+        uses: mr-smithers-excellent/docker-build-push@v6
+        with:
+          image: my-bmi-img
+          registry: ghcr.io/yanakorns
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          tags: ${{ env.TAG_NAME }}, latest
